@@ -1,0 +1,4 @@
+[Project]
+Name=ccompiler
+Manager=KDevCMakeManager
+VersionControl=kdevgit
