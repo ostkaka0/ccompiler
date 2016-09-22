@@ -1,5 +1,7 @@
 [Bb]in/
 [Ee]xternal/
+build-Desktop-Default/
+snake_case.py
 
 *.dll
 

@@ -1,21 +1,26 @@
-#pragma once
+#ifndef SCAN_H
+#define SCAN_H
 
-#include "Macro.h"
-#include "Token.h"
+#include <stdio.h>
+#include <ctype.h>
 
-static std::vector<Token> scan(const char* path) {
-    std::vector<Token> tokens;
+#include "macro.h"
+#include "token.h"
+#include "external/vec.h"
+
+static vec_token_t scan(const char* path) {
+    vec_token_t tokens;
+	vec_init(&tokens);
     
     FILE* file = fopen(path, "r");
     if (file == NULL) {
         printf("Failed to open file '%s'!", path);
-        return {};
+        return tokens;
     }
-    DEFER( fclose(file); )
     
     char buffer[2048];
     size_t index = 0;
-    u32 lineNumber = 1;
+    int line_number = 1;
     
     {
         int res = fread(buffer, sizeof(char), 2048, file);
@@ -23,7 +28,7 @@ static std::vector<Token> scan(const char* path) {
             buffer[res] = EOF;
     }
     
-    while (true) {
+    for (;;) {
 
         if (index >= 1024) {
           memcpy(buffer, &buffer[index], 2048-index);
@@ -33,7 +38,7 @@ static std::vector<Token> scan(const char* path) {
           index = 0;
         }
         
-        Token token;
+        token_t token;
         size_t length = 1;
         
         char c = buffer[index];
@@ -41,7 +46,7 @@ static std::vector<Token> scan(const char* path) {
         // Skip whitespace
         while (isspace(c)) {
             if (c == '\n')
-                lineNumber++;
+                line_number++;
             c = buffer[++index];
         }
         
@@ -58,15 +63,15 @@ static std::vector<Token> scan(const char* path) {
                 length++;
                 c = buffer[index+length];
                 if (index + length >= 2048) // TODO: Compile error
-                    runtimeError(lineNumber, "Name is longer than max length.");
+                    runtime_error(line_number, "Name is longer than max length.");
             }
             while (isalpha(c) || c == '_');
-            char* text = new char[length+1];
+            char* text = malloc(length+1);
             text[length] = '\0';
             memcpy(text, &buffer[index], length * sizeof(char));
-            token = createTokenText(text);
+            token = create_token_label(text);
         }
-        // Integer, Float
+        // _int, Float
         else if (isdigit(c) || c == '.') {
             length = 0;
             
@@ -74,7 +79,7 @@ static std::vector<Token> scan(const char* path) {
                 length++;
                 c = buffer[index+length];
                 if (index + length >= 2048) // TODO: Compile error
-                    runtimeError(lineNumber, "Digit is longer than max length.");
+                    runtime_error(line_number, "Digit is longer than max length.");
             }
             
             if (c == '.') {
@@ -82,52 +87,52 @@ static std::vector<Token> scan(const char* path) {
                     length++;
                     c = buffer[index+length];
                     if (index + length >= 2048) // TODO: Compile error
-                        runtimeError(lineNumber, "Digit is longer than max length.");
+                        runtime_error(line_number, "Digit is longer than max length.");
                 } while(isdigit(c) || c == '.');
-                token = createToken((double)atof(&buffer[index]));
+                token = create_token_float(atof(&buffer[index]));
             }
             else
-                token = createToken((int)atol(&buffer[index]));
+                token = create_token_int(atoi(&buffer[index]));
         }
         // Symbol:
         else if (ispunct(c)) {
             switch(c) {
                 case '+':
                     if (buffer[index+1] == '+') {
-                        token = createTokenSymbol(SYMBOL_INCREASE);
+                        token = create_token_symbol(SYMBOL_INCREASE);
                         length = 2;
                         break;
                     }
-                    token = createTokenSymbol(SYMBOL_ADD);
+                    token = create_token_symbol(SYMBOL_ADD);
                     break;
                 case '-':
                     if (buffer[index+1] == '+') {
-                        token = createTokenSymbol(SYMBOL_DECREASE);
+                        token = create_token_symbol(SYMBOL_DECREASE);
                         length = 2;
                         break;
                     }
-                    token = createTokenSymbol(SYMBOL_SUBTRACT);
+                    token = create_token_symbol(SYMBOL_SUBTRACT);
                     break;
                 case '(':
-                    token = createTokenSymbol(SYMBOL_PARANTHESIS_BEGIN);
+                    token = create_token_symbol(SYMBOL_PARANTHESIS_BEGIN);
                     break;
                 case ')':
-                    token = createTokenSymbol(SYMBOL_PARANTHESIS_END);
+                    token = create_token_symbol(SYMBOL_PARANTHESIS_END);
                     break;
                 case '*':
-                    token = createTokenSymbol(SYMBOL_MULTIPLY);
+                    token = create_token_symbol(SYMBOL_MULTIPLY);
                     break;
                 case '/': // TODO: Comments
-                    token = createTokenSymbol(SYMBOL_DIVIDE);
+                    token = create_token_symbol(SYMBOL_DIVIDE);
                     break;
                 case '%': // TODO: Comments
-                    token = createTokenSymbol(SYMBOL_MODULO);
+                    token = create_token_symbol(SYMBOL_MODULO);
                     break;
                 case ';':
-                    token = createTokenSymbol(SYMBOL_SEMICOLON);
+                    token = create_token_symbol(SYMBOL_SEMICOLON);
                     break;
                 case '=':
-                    token = createTokenSymbol(SYMBOL_ASSIGN);
+                    token = create_token_symbol(SYMBOL_ASSIGN);
                     break;
                 
                 default:
@@ -165,11 +170,14 @@ static std::vector<Token> scan(const char* path) {
         }*/
             
         index += length;
-        token.lineNumber = lineNumber;
-        tokens.push_back(token);
+        token.line_number = line_number;
+        vec_push(&tokens, token);
     }
     
-    printf("Lines: %i\n", lineNumber);
+    printf("Lines: %i\n", line_number);
     
+	fclose(file);
     return tokens;
 }
+
+#endif // SCAN_H
