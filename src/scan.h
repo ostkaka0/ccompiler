@@ -65,7 +65,7 @@ static vec_token_t scan(const char* path) {
                 if (index + length >= 2048) // TODO: Compile error
                     runtime_error(line_number, "Name is longer than max length.");
             }
-            while (isalpha(c) || c == '_');
+            while (isalnum(c) || c == '_');
             char* text = malloc(length+1);
             text[length] = '\0';
             memcpy(text, &buffer[index], length * sizeof(char));

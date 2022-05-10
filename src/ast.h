@@ -1,5 +1,5 @@
-#ifndef EXPR_H
-#define EXPR_H
+#ifndef AST_H
+#define AST_H
 
 #include "types.h"
 #include "datatype.h"
@@ -8,7 +8,7 @@
 struct expr_t_tag;
 
 typedef enum {
-    // Null expr_tession:
+    // Null expression:
     EXPR_NULL = 0,
     // Literals:
     EXPR_INT_LITERAL,
@@ -36,7 +36,7 @@ typedef union {
     struct expr_t_tag* _child;
 } expr_value_t;
 
-// expr_tession
+// expression
 typedef struct expr_t_tag {
     //expr_value_t value;
 	union {
@@ -134,7 +134,7 @@ static datatype_t evaluate_type(expr_t* expr) {
             
             // TODO: Implicit cast int to/from s8,s16,s32,s64. size_t,uint to/from u8,u16,u32,u64.
             
-            if (!datatype_cmp(a, b))
+            if (!datatype_implicit_cast_cmp(a, b))
                 runtime_error(expr->_child_pair[1]->line_number, "Type does not match");
             
             expr->datatype = a;
@@ -142,7 +142,7 @@ static datatype_t evaluate_type(expr_t* expr) {
         }
         
         default:
-            runtime_error_simple("Unhandled expr_tession type in evaluateType(...)");
+            ERROR("Could not evaluate expression");
             break;
     }
     
@@ -152,4 +152,4 @@ static datatype_t evaluate_type(expr_t* expr) {
     return expr->datatype;
 }
 
-#endif // EXPR_H
+#endif // AST_H

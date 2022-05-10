@@ -12,6 +12,7 @@ typedef enum {
     TYPE_VOID,
     
     // Types without parameters
+    TYPE_RAWPTR,
     TYPE_SIZE_T,
     TYPE_UINT,
     TYPE_INT,
@@ -46,6 +47,8 @@ typedef struct datatype_t_tag {
     datatype_type_t type;
 } datatype_t;
 
+static bool _datatype_implicit_cast_allowed(const datatype_t a, const datatype_t b);
+
 static datatype_t create_datatype(datatype_type_t type) {
     datatype_t datatype;
     datatype.type = type;
@@ -57,17 +60,19 @@ static datatype_t create_datatype_label(const char* label) {
     
     if (strcmp(label, "void") == 0)
         return create_datatype(TYPE_VOID);
+    if (strcmp(label, "rawptr") == 0)
+        return create_datatype(TYPE_RAWPTR);
     if (strcmp(label, "int") == 0)
         return create_datatype(TYPE_INT);
-    if (strcmp(label, "char") == 0)
+    if (strcmp(label, "s8") == 0)
         return create_datatype(TYPE_S8);
-    if (strcmp(label, "short") == 0)
+    if (strcmp(label, "s16") == 0)
         return create_datatype(TYPE_S16);
-    if (strcmp(label, "long") == 0)
+    if (strcmp(label, "s32") == 0)
         return create_datatype(TYPE_S32);
-    if (strcmp(label, "float") == 0)
+    if (strcmp(label, "float32") == 0)
         return create_datatype(TYPE_FLOAT32);
-    if (strcmp(label, "double") == 0)
+    if (strcmp(label, "float64") == 0)
         return create_datatype(TYPE_FLOAT64);
     
     return create_datatype(TYPE_UNEVALUATED);
@@ -98,6 +103,62 @@ static bool datatype_cmp(const datatype_t a, const datatype_t b) {
         default:
             return true;
     }
+}
+
+
+
+static bool datatype_implicit_cast_cmp(const datatype_t a, const datatype_t b) {
+    return (datatype_cmp(a, b) ||
+        _datatype_implicit_cast_allowed(a, b) ||
+        _datatype_implicit_cast_allowed(b, a));
+}
+
+static bool _datatype_implicit_cast_allowed(const datatype_t a, const datatype_t b) {
+    switch(b.type) {
+        case TYPE_INT:
+            return (a.type == TYPE_S8 || a.type == TYPE_S16 || a.type == TYPE_S32 || a.type == TYPE_S64);
+        case TYPE_UINT:
+            return (a.type == TYPE_U8 || a.type == TYPE_U16 || a.type == TYPE_U32 || a.type == TYPE_U64);
+        case TYPE_RAWPTR:
+            return (a.type == TYPE_PTR || a.type == TYPE_PTR_OWNED);
+        case TYPE_PTR_OWNED:
+           return (a.type == TYPE_PTR && datatype_implicit_cast_cmp(*a._ptr, *b._ptr));
+    }
+    return false;
+}
+
+static char* datatype_to_string(const datatype_t datatype) {
+    switch(datatype.type) {
+    case TYPE_UNEVALUATED: return "UNEVALUATED";
+    case TYPE_VOID: return "void";
+    case TYPE_RAWPTR: return "rawptr";
+
+    // Types without parameters
+    case TYPE_SIZE_T: return "size_t";
+    case TYPE_UINT: return "uint";
+    case TYPE_INT: return "int";
+    case TYPE_U8: return "u8";
+    case TYPE_S8: return "s8";
+    case TYPE_U16: return "u16";
+    case TYPE_S16: return "s16";
+    case TYPE_U32: return "u32";
+    case TYPE_S32: return "s32";
+    case TYPE_U64: return "u64";
+    case TYPE_S64: return "s64";
+    case TYPE_FLOAT32: return "float32";
+    case TYPE_FLOAT64: return "float64";
+
+    // Types with parameters
+    case TYPE_PTR: // Pointer
+        break;
+    case TYPE_PTR_OWNED:
+        break;
+    case TYPE_STRUCT:
+        break;
+    default:
+        break;
+    }
+    return "UNDEFINED";
 }
 
 //static datatype_t create_datatype_tStruct(StructDef* structDefPtr) {

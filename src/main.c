@@ -10,12 +10,14 @@
 #include "common.h"
 #include "scan.h"
 #include "parse.h"
+#include "generate_c.h"
 
 int main(int argc, char **argv) {
+    PARSE_ERROR("The cow is hungry #%i", -1, 1337);
 
     vec_token_t tokens = scan("test.ccc");
     
-	token_t token;
+    token_t token;
 	int i;
     vec_foreach(&tokens, token, i) {
         switch(token.type) {
@@ -42,6 +44,10 @@ int main(int argc, char **argv) {
     printf("\n");
     
     vec_expr_t expressions = parse(&tokens);
+    char* c_code = generate_c(expressions);
+    printf("%x\n", (u64)c_code);
+    printf("%s\n", c_code);
+    printf("c-code: \n%s", c_code);
     
     printf("\n %i \n", tokens.length);
     

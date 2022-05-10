@@ -2,7 +2,7 @@
 #define PARSE_H
 
 #include "token.h"
-#include "expr.h"
+#include "ast.h"
 #include "common.h"
 
 #include "external/vec.h"
@@ -42,8 +42,12 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
                     expr = create_expr_decl_variable(last_expr.datatype, token._string);
                 else if (last_expr.type != EXPR_NULL)
                     runtime_error(token.line_number, "Unexpected token");
-                else
-                    expr = create_expr_decl_datatype(create_datatype_label(token._string));
+                else {
+                    datatype_t datatype = create_datatype_label(token._string);
+                    if (datatype.type == TYPE_UNEVALUATED)
+                        PARSE_ERROR("Symbol '%s' is not a datatype", token.line_number, token._string);
+                    expr = create_expr_decl_datatype(datatype);
+                }
                 break;
             
             case TOKEN_SYMBOL:
@@ -57,8 +61,9 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
                             expr_t expr_value = parse_rvalue(tokens, index, 15);
                             (*index)--;
                             datatype_t datatype = evaluate_type(&expr_value);
-                            if (!datatype_cmp(datatype, last_expr.datatype))
+                            if (!datatype_implicit_cast_cmp(datatype, last_expr.datatype))
                                 runtime_error(expr_value.line_number, "datatype of expression does not match with variable");
+
                             expr = create_expr_decl_variable_assign(last_expr, expr_value);
                         }
                         else
