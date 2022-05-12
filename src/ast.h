@@ -10,6 +10,9 @@ struct expr_t_tag;
 typedef enum {
     // Null expression:
     EXPR_NULL = 0,
+
+    EXPR_IDENTIFIER,
+
     // Literals:
     EXPR_INT_LITERAL,
     EXPR_FLOAT32_LITERAL,
@@ -26,6 +29,9 @@ typedef enum {
     EXPR_DECL_DATATYPE,
     EXPR_DECL_VARIABLE,
     EXPR_DECL_VARIABLE_ASSIGN,
+    EXPR_DECL_CONST,
+    EXPR_DECL_STRUCT,
+    EXPR_DECL_PROCEDURE,
 } expr_type_t;
 
 typedef union {

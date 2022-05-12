@@ -8,7 +8,7 @@
 #include "token.h"
 #include "external/vec.h"
 
-static vec_token_t scan(const char* path) {
+static vec_token_t scan(const char* path, int num_null_terminators) {
     vec_token_t tokens;
 	vec_init(&tokens);
     
@@ -119,6 +119,12 @@ static vec_token_t scan(const char* path) {
                 case ')':
                     token = create_token_symbol(SYMBOL_PARANTHESIS_END);
                     break;
+                case '{':
+                    token = create_token_symbol(SYMBOL_BRACE_BEGIN);
+                    break;
+                case '}':
+                    token = create_token_symbol(SYMBOL_BRACE_END);
+                    break;
                 case '*':
                     token = create_token_symbol(SYMBOL_MULTIPLY);
                     break;
@@ -133,6 +139,19 @@ static vec_token_t scan(const char* path) {
                     break;
                 case '=':
                     token = create_token_symbol(SYMBOL_ASSIGN);
+                    break;
+                case ':':
+                    if (buffer[index+1] == ':') {
+                        token = create_token_symbol(SYMBOL_COLON_COLON);
+                        length = 2;
+                        break;
+                    }
+                    if (buffer[index+1] == '=') {
+                        token = create_token_symbol(SYMBOL_COLON_ASSIGN);
+                        length = 2;
+                        break;
+                    }
+                    token = create_token_symbol(SYMBOL_COLON);
                     break;
                 
                 default:
@@ -177,6 +196,12 @@ static vec_token_t scan(const char* path) {
     printf("Lines: %i\n", line_number);
     
 	fclose(file);
+
+    for (int i = 0; i < num_null_terminators; i++) {
+        vec_push(&tokens, (token_t){.type = TOKEN_NULL});
+    }
+    vec_push(&tokens, (token_t){.type = TOKEN_INVALID});
+    tokens.length -= num_null_terminators + 1;
     return tokens;
 }
 

@@ -15,7 +15,7 @@
 int main(int argc, char **argv) {
     PARSE_ERROR("The cow is hungry #%i", -1, 1337);
 
-    vec_token_t tokens = scan("test.ccc");
+    vec_token_t tokens = scan("test.ccc", 4);
     
     token_t token;
 	int i;

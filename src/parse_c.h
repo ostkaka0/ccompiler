@@ -8,18 +8,18 @@
 #include "external/vec.h"
 
 
-static expr_t parse_stmt(vec_token_t* tokens, u32* index);
-static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence);
-static inline int get_precedence(token_t token);
+static expr_t parse_c_stmt(vec_token_t* tokens, u32* index);
+static expr_t parse_c_rvalue(vec_token_t* tokens, u32* index, int max_precedence);
+static inline int get_c_precedence(token_t token);
 
 
-static vec_expr_t parse(vec_token_t* tokens) {
+static vec_expr_t parse_c(vec_token_t* tokens) {
     vec_expr_t expressions;
 	vec_init(&expressions);
     u32 index = 0;
     
     while (index < tokens->length) {
-        expr_t expr = parse_stmt(tokens, &index);
+        expr_t expr = parse_c_stmt(tokens, &index);
         //evaluateType(&expr_t);
         if (expr.type != EXPR_NULL)
             vec_push(&expressions, expr);
@@ -28,7 +28,7 @@ static vec_expr_t parse(vec_token_t* tokens) {
     return expressions;
 }
 
-static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
+static expr_t parse_c_stmt(vec_token_t* tokens, u32* index) {
     expr_t last_expr;
     last_expr.type = EXPR_NULL;
     
@@ -38,14 +38,15 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
         
         switch (token.type) {
             case TOKEN_LABEL:
-                if (last_expr.type == EXPR_NULL) {
-                    expr = (expr_t){
-                        .type = EXPR_IDENTIFIER,
-                        .line_number = -1,
-                        ._string = token._string,
-                    };
-                } else {
-                    PARSE_ERROR("Unexpected symbol '%s'", token.line_number, token._string);
+                if (last_expr.type == EXPR_DECL_DATATYPE)
+                    expr = create_expr_decl_variable(last_expr.datatype, token._string);
+                else if (last_expr.type != EXPR_NULL)
+                    runtime_error(token.line_number, "Unexpected token");
+                else {
+                    datatype_t datatype = create_datatype_label(token._string);
+                    if (datatype.type == TYPE_UNEVALUATED)
+                        PARSE_ERROR("Symbol '%s' is not a datatype", token.line_number, token._string);
+                    expr = create_expr_decl_datatype(datatype);
                 }
                 break;
             
@@ -54,17 +55,10 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
                     case SYMBOL_SEMICOLON:
 						(*index)++;
                         return last_expr;
-                    case SYMBOL_COLON_COLON:
-                        if (last_expr.type == EXPR_IDENTIFIER) {
-                            (*index)++;
-                            expr_t expr_value = parse_rvalue(tokens, index, 15);
-                        }
-
-                        break;
                     case SYMBOL_ASSIGN:
                         if (last_expr.type == EXPR_DECL_VARIABLE) {
                             (*index)++;
-                            expr_t expr_value = parse_rvalue(tokens, index, 15);
+                            expr_t expr_value = parse_c_rvalue(tokens, index, 15);
                             (*index)--;
                             datatype_t datatype = evaluate_type(&expr_value);
                             if (!datatype_implicit_cast_cmp(datatype, last_expr.datatype))
@@ -78,13 +72,13 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
                     default:
                         if (last_expr.type != EXPR_NULL)
                             runtime_error_simple("Unexpected token");
-                        return parse_rvalue(tokens, index, 15);
+                        return parse_c_rvalue(tokens, index, 15);
                 }
                 break;
             default:
                 if (last_expr.type != EXPR_NULL)
                     runtime_error_simple("Unexpected token");
-                return parse_rvalue(tokens, index, 15);
+                return parse_c_rvalue(tokens, index, 15);
         }
         
         expr.line_number = token.line_number;
@@ -95,13 +89,7 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
     return last_expr;
 }
 
-static expr_t parse_struct_decl(vec_token_t* tokens, u32* index) {
-    if (!token_equals(tokens->data[*index], create_token_symbol(SYMBOL_BRACE_BEGIN))) runtime_error(token.line_number, "Unexpected token.");
-    (*index)++;
-
-}
-
-static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) {
+static expr_t parse_c_rvalue(vec_token_t* tokens, u32* index, int max_precedence) {
     expr_t last_expr;
     last_expr.type = EXPR_NULL;
     
@@ -109,19 +97,11 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
         token_t token = tokens->data[*index];
         expr_t expr;
         
-        int precedence = get_precedence(token);
+        int precedence = get_c_precedence(token);
         if (precedence > max_precedence)
             return last_expr;
         
         switch(token.type) {
-            case TOKEN_LABEL:
-                if (strcmp(token._string, "struct")) {
-                    (*index)++;
-                    parse_struct_decl(tokens, index);
-
-                } else {
-                    runtime_error(token.line_number, "Unexpected token.");
-                }
             case TOKEN_INT_LITERAL:
                 expr = create_expr_int_literal(token._int);
                 if (last_expr.type) runtime_error(token.line_number, "Unexpected token (int).");
@@ -142,13 +122,13 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                         
                     case SYMBOL_PARANTHESIS_BEGIN: {
                         (*index)++;
-                        expr = parse_rvalue(tokens, index, precedence);
+                        expr = parse_c_rvalue(tokens, index, precedence);
                         if (last_expr.type) runtime_error(token.line_number, "Unexpected token '('");
                         break;
                     }
                     case SYMBOL_ADD: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
+                        expr_t next_expr = parse_c_rvalue(tokens, index, precedence);
 						expr_t* expr_a = malloc(sizeof(expr_t));
 						expr_t* expr_b = malloc(sizeof(expr_t));
 						*expr_a = last_expr, *expr_b = next_expr;
@@ -158,7 +138,7 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_SUBTRACT: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
+                        expr_t next_expr = parse_c_rvalue(tokens, index, precedence);
 						expr_t* expr_a = malloc(sizeof(expr_t));
 						expr_t* expr_b = malloc(sizeof(expr_t));
 						*expr_a = last_expr, *expr_b = next_expr;
@@ -168,7 +148,7 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_MULTIPLY: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
+                        expr_t next_expr = parse_c_rvalue(tokens, index, precedence);
 						expr_t* expr_a = malloc(sizeof(expr_t));
 						expr_t* expr_b = malloc(sizeof(expr_t));
 						*expr_a = last_expr, *expr_b = next_expr;
@@ -178,7 +158,7 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_DIVIDE: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
+                        expr_t next_expr = parse_c_rvalue(tokens, index, precedence);
 						expr_t* expr_a = malloc(sizeof(expr_t));
 						expr_t* expr_b = malloc(sizeof(expr_t));
 						*expr_a = last_expr, *expr_b = next_expr;
@@ -188,7 +168,7 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_MODULO: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
+                        expr_t next_expr = parse_c_rvalue(tokens, index, precedence);
 						expr_t* expr_a = malloc(sizeof(expr_t));
 						expr_t* expr_b = malloc(sizeof(expr_t));
 						*expr_a = last_expr, *expr_b = next_expr;
@@ -215,16 +195,7 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
     return last_expr;
 }
 
-
-static expr_t parse_const_decl(vec_token_t* tokens, u32* index, char* str) {
-    assert(tokens->data[*index]._symbol = SYMBOL_COLON_COLON);
-    (*index)++;
-    token_t token = tokens->data[*index];
-    if (token.)
-
-}
-
-static inline int get_precedence(token_t token) {
+static inline int get_c_precedence(token_t token) {
     switch (token.type) {
         default:
             return 0;
