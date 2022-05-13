@@ -10,14 +10,23 @@
 #include "common.h"
 #include "scan.h"
 #include "parse.h"
+#include "parse_c.h"
 #include "generate_c.h"
+
+#include "generate_c.c"
+
+#define vec_foreach(v, var, iter)\
+  if  ( (v)->len > 0 )\
+  for ( (iter) = 0;\
+        (iter) < (v)->len && (((var) = (v)->at[(iter)]), 1);\
+        ++(iter))
 
 int main(int argc, char **argv) {
     PARSE_ERROR("The cow is hungry #%i", -1, 1337);
 
-    vec_token_t tokens = scan("test.ccc", 4);
+    TokenArray tokens = scan("test.ccc", 4);
     
-    token_t token;
+    Token token;
 	int i;
     vec_foreach(&tokens, token, i) {
         switch(token.type) {
@@ -43,13 +52,13 @@ int main(int argc, char **argv) {
     }
     printf("\n");
     
-    vec_expr_t expressions = parse(&tokens);
+    ExprArray expressions = parse_c(&tokens);
     char* c_code = generate_c(expressions);
     printf("%x\n", (u64)c_code);
     printf("%s\n", c_code);
     printf("c-code: \n%s", c_code);
     
-    printf("\n %i \n", tokens.length);
+    printf("\n %i \n", tokens.len);
     
     return 0;
 }

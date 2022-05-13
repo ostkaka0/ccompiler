@@ -4,7 +4,7 @@
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the MIT license. See LICENSE for details.
  */
-
+/*
 #include "vec.h"
 
 
@@ -116,3 +116,4 @@ void vec_push_string(vec_char_t* string_stream, const char* string) {
     vec_pusharr(string_stream, string, strlen(string));
 }
 
+*/

@@ -1,11 +1,12 @@
 #ifndef AST_H
 #define AST_H
 
-#include "types.h"
+#include "core/types.h"
 #include "datatype.h"
+#include "core/array.h"
 #include "external/vec.h"
 
-struct expr_t_tag;
+struct Expr;
 
 typedef enum {
     // Null expression:
@@ -32,34 +33,34 @@ typedef enum {
     EXPR_DECL_CONST,
     EXPR_DECL_STRUCT,
     EXPR_DECL_PROCEDURE,
-} expr_type_t;
+} ExprTag;
 
 typedef union {
-    s64 _int;
+    i64 _int;
     double _float;
     char* _str;
-    struct expr_t_tag* _child_pair[2];
-    struct expr_t_tag* _child;
-} expr_value_t;
+    struct Expr* _child_pair[2];
+    struct Expr* _child;
+} ExprValue;
 
 // expression
-typedef struct expr_t_tag {
-    //expr_value_t value;
+typedef struct Expr {
+    //ExprValue value;
 	union {
-		s64 _int;
+        i64 _int;
 		double _float;
 		char* _string;
-		struct expr_t_tag* _child_pair[2];
-		struct expr_t_tag* _child;
+        struct Expr* _child_pair[2];
+        struct Expr* _child;
 	};
-    expr_type_t type;
+    ExprTag type;
     int line_number;
     datatype_t datatype;
-} expr_t;
-typedef vec_t(expr_t) vec_expr_t;
+} Expr;
+typedef Array(Expr) ExprArray;
 
-static expr_t create_expr_int_literal(s64 value) {
-    expr_t expr;
+static Expr create_expr_int_literal(i64 value) {
+    Expr expr;
     expr._int = value;
     expr.type = EXPR_INT_LITERAL;
     expr.datatype.type = TYPE_INT;
@@ -67,8 +68,8 @@ static expr_t create_expr_int_literal(s64 value) {
     return expr;
 }
 
-static expr_t create_expr_float_literal(float value) {
-    expr_t expr;
+static Expr create_expr_float_literal(float value) {
+    Expr expr;
     expr._float = value;
     expr.type = EXPR_FLOAT32_LITERAL;
     expr.datatype.type = TYPE_FLOAT32;
@@ -76,8 +77,8 @@ static expr_t create_expr_float_literal(float value) {
     return expr;
 }
 
-static expr_t create_expr_operator_pair(expr_type_t type, expr_t* child_a, expr_t* child_b) {
-    expr_t expr;
+static Expr create_expr_operator_pair(ExprTag type, Expr* child_a, Expr* child_b) {
+    Expr expr;
     expr._child_pair[0] = child_a;
     expr._child_pair[1] = child_b;
     expr.type = type;
@@ -86,8 +87,8 @@ static expr_t create_expr_operator_pair(expr_type_t type, expr_t* child_a, expr_
     return expr;
 }
 
-static expr_t create_expr_operator(expr_type_t type, expr_t* child) {
-    expr_t expr;
+static Expr create_expr_operator(ExprTag type, Expr* child) {
+    Expr expr;
     expr._child = child;
     expr.type = type;
 	expr.datatype.type = TYPE_UNEVALUATED;
@@ -95,16 +96,16 @@ static expr_t create_expr_operator(expr_type_t type, expr_t* child) {
     return expr;
 }
 
-static expr_t create_expr_decl_datatype(datatype_t datatype) {
-    expr_t expr;
+static Expr create_expr_decl_datatype(datatype_t datatype) {
+    Expr expr;
     expr.type = EXPR_DECL_DATATYPE;
     expr.datatype = datatype;
     expr.line_number = -1;
     return expr;
 }
 
-static expr_t create_expr_decl_variable(datatype_t datatype, char* name) {
-    expr_t expr;
+static Expr create_expr_decl_variable(datatype_t datatype, char* name) {
+    Expr expr;
     expr.type = EXPR_DECL_VARIABLE;
     expr.datatype = datatype;
     expr._string = name;
@@ -112,19 +113,19 @@ static expr_t create_expr_decl_variable(datatype_t datatype, char* name) {
     return expr;
 }
 
-static expr_t create_expr_decl_variable_assign(expr_t expr_variable_declaration, expr_t expr_value) {
-    expr_t expr;
+static Expr create_expr_decl_variable_assign(Expr expr_variable_declaration, Expr expr_value) {
+    Expr expr;
     expr.type = EXPR_DECL_VARIABLE_ASSIGN;
 	expr.datatype.type = TYPE_UNEVALUATED;
-    expr._child_pair[0] = malloc(sizeof(expr_t));//new expr_t(expr_variable_declaration);
-    expr._child_pair[1] = malloc(sizeof(expr_t));//new expr_t(expr_value);
+    expr._child_pair[0] = malloc(sizeof(Expr));//new Expr(expr_variable_declaration);
+    expr._child_pair[1] = malloc(sizeof(Expr));//new Expr(expr_value);
     *expr._child_pair[0] = expr_variable_declaration;
     *expr._child_pair[1] = expr_value;
     expr.line_number = expr_variable_declaration.line_number;
     return expr;
 }
 
-static datatype_t evaluate_type(expr_t* expr) {
+static datatype_t evaluate_type(Expr* expr) {
     if (expr->datatype.type != TYPE_UNEVALUATED)
         return expr->datatype;
     
@@ -138,7 +139,7 @@ static datatype_t evaluate_type(expr_t* expr) {
             datatype_t a = evaluate_type(expr->_child_pair[0]);
             datatype_t b = evaluate_type(expr->_child_pair[1]);
             
-            // TODO: Implicit cast int to/from s8,s16,s32,s64. size_t,uint to/from u8,u16,u32,u64.
+            // TODO: Implicit cast int to/from s8,s16,s32,i64. size_t,uint to/from u8,u16,u32,u64.
             
             if (!datatype_implicit_cast_cmp(a, b))
                 runtime_error(expr->_child_pair[1]->line_number, "Type does not match");

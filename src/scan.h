@@ -8,9 +8,8 @@
 #include "token.h"
 #include "external/vec.h"
 
-static vec_token_t scan(const char* path, int num_null_terminators) {
-    vec_token_t tokens;
-	vec_init(&tokens);
+static TokenArray scan(const char* path, int num_null_terminators) {
+    TokenArray tokens = {};
     
     FILE* file = fopen(path, "r");
     if (file == NULL) {
@@ -38,7 +37,7 @@ static vec_token_t scan(const char* path, int num_null_terminators) {
           index = 0;
         }
         
-        token_t token;
+        Token token;
         size_t length = 1;
         
         char c = buffer[index];
@@ -190,7 +189,7 @@ static vec_token_t scan(const char* path, int num_null_terminators) {
             
         index += length;
         token.line_number = line_number;
-        vec_push(&tokens, token);
+        array_push(tokens, token);
     }
     
     printf("Lines: %i\n", line_number);
@@ -198,10 +197,10 @@ static vec_token_t scan(const char* path, int num_null_terminators) {
 	fclose(file);
 
     for (int i = 0; i < num_null_terminators; i++) {
-        vec_push(&tokens, (token_t){.type = TOKEN_NULL});
+        array_push(tokens, (Token){.type = TOKEN_NULL});
     }
-    vec_push(&tokens, (token_t){.type = TOKEN_INVALID});
-    tokens.length -= num_null_terminators + 1;
+    array_push(tokens, (Token){.type = TOKEN_INVALID});
+    tokens.len -= num_null_terminators + 1;
     return tokens;
 }
 

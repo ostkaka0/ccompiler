@@ -8,38 +8,37 @@
 #include "external/vec.h"
 
 
-static expr_t parse_stmt(vec_token_t* tokens, u32* index);
-static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence);
-static inline int get_precedence(token_t token);
+static Expr parse_stmt(TokenArray* tokens, u32* index);
+static Expr parse_rvalue(TokenArray* tokens, u32* index, int max_precedence);
+static inline int get_precedence(Token token);
 
 
-static vec_expr_t parse(vec_token_t* tokens) {
-    vec_expr_t expressions;
-	vec_init(&expressions);
+static ExprArray parse(TokenArray* tokens) {
+    ExprArray expressions = {};
     u32 index = 0;
     
-    while (index < tokens->length) {
-        expr_t expr = parse_stmt(tokens, &index);
-        //evaluateType(&expr_t);
+    while (index < tokens->len) {
+        Expr expr = parse_stmt(tokens, &index);
+        //evaluateType(&Expr);
         if (expr.type != EXPR_NULL)
-            vec_push(&expressions, expr);
+            array_push(expressions, expr);
     }
     
     return expressions;
 }
 
-static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
-    expr_t last_expr;
+static Expr parse_stmt(TokenArray* tokens, u32* index) {
+    Expr last_expr;
     last_expr.type = EXPR_NULL;
     
-    for(; *index < tokens->length; ++(*index)) {
-        token_t token = tokens->data[*index];
-        expr_t expr;
+    for(; *index < tokens->len; ++(*index)) {
+        Token token = tokens->at[*index];
+        Expr expr;
         
         switch (token.type) {
             case TOKEN_LABEL:
                 if (last_expr.type == EXPR_NULL) {
-                    expr = (expr_t){
+                    expr = (Expr){
                         .type = EXPR_IDENTIFIER,
                         .line_number = -1,
                         ._string = token._string,
@@ -57,14 +56,14 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
                     case SYMBOL_COLON_COLON:
                         if (last_expr.type == EXPR_IDENTIFIER) {
                             (*index)++;
-                            expr_t expr_value = parse_rvalue(tokens, index, 15);
+                            Expr expr_value = parse_rvalue(tokens, index, 15);
                         }
 
                         break;
                     case SYMBOL_ASSIGN:
                         if (last_expr.type == EXPR_DECL_VARIABLE) {
                             (*index)++;
-                            expr_t expr_value = parse_rvalue(tokens, index, 15);
+                            Expr expr_value = parse_rvalue(tokens, index, 15);
                             (*index)--;
                             datatype_t datatype = evaluate_type(&expr_value);
                             if (!datatype_implicit_cast_cmp(datatype, last_expr.datatype))
@@ -95,19 +94,19 @@ static expr_t parse_stmt(vec_token_t* tokens, u32* index) {
     return last_expr;
 }
 
-static expr_t parse_struct_decl(vec_token_t* tokens, u32* index) {
-    if (!token_equals(tokens->data[*index], create_token_symbol(SYMBOL_BRACE_BEGIN))) runtime_error(token.line_number, "Unexpected token.");
-    (*index)++;
+static Expr parse_struct_decl(TokenArray* tokens, u32* index) {
+    //if (!token_equals(tokens->at[*index], create_token_symbol(SYMBOL_BRACE_BEGIN))) runtime_error(token.line_number, "Unexpected token.");
+    //(*index)++;
 
 }
 
-static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) {
-    expr_t last_expr;
+static Expr parse_rvalue(TokenArray* tokens, u32* index, int max_precedence) {
+    Expr last_expr;
     last_expr.type = EXPR_NULL;
     
-    for(; *index < tokens->length; ++*index) {
-        token_t token = tokens->data[*index];
-        expr_t expr;
+    for(; *index < tokens->len; ++*index) {
+        Token token = tokens->at[*index];
+        Expr expr;
         
         int precedence = get_precedence(token);
         if (precedence > max_precedence)
@@ -148,9 +147,9 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_ADD: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
-						expr_t* expr_a = malloc(sizeof(expr_t));
-						expr_t* expr_b = malloc(sizeof(expr_t));
+                        Expr next_expr = parse_rvalue(tokens, index, precedence);
+                        Expr* expr_a = malloc(sizeof(Expr));
+                        Expr* expr_b = malloc(sizeof(Expr));
 						*expr_a = last_expr, *expr_b = next_expr;
                         expr = create_expr_operator_pair(EXPR_ADD, expr_a, expr_b);
                         (*index)--;
@@ -158,9 +157,9 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_SUBTRACT: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
-						expr_t* expr_a = malloc(sizeof(expr_t));
-						expr_t* expr_b = malloc(sizeof(expr_t));
+                        Expr next_expr = parse_rvalue(tokens, index, precedence);
+                        Expr* expr_a = malloc(sizeof(Expr));
+                        Expr* expr_b = malloc(sizeof(Expr));
 						*expr_a = last_expr, *expr_b = next_expr;
                         expr = create_expr_operator_pair(EXPR_SUBTRACT, expr_a, expr_b);
                         (*index)--;
@@ -168,9 +167,9 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_MULTIPLY: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
-						expr_t* expr_a = malloc(sizeof(expr_t));
-						expr_t* expr_b = malloc(sizeof(expr_t));
+                        Expr next_expr = parse_rvalue(tokens, index, precedence);
+                        Expr* expr_a = malloc(sizeof(Expr));
+                        Expr* expr_b = malloc(sizeof(Expr));
 						*expr_a = last_expr, *expr_b = next_expr;
                         expr = create_expr_operator_pair(EXPR_MULTIPLY, expr_a, expr_b);
                         (*index)--;
@@ -178,9 +177,9 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_DIVIDE: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
-						expr_t* expr_a = malloc(sizeof(expr_t));
-						expr_t* expr_b = malloc(sizeof(expr_t));
+                        Expr next_expr = parse_rvalue(tokens, index, precedence);
+                        Expr* expr_a = malloc(sizeof(Expr));
+                        Expr* expr_b = malloc(sizeof(Expr));
 						*expr_a = last_expr, *expr_b = next_expr;
                         expr = create_expr_operator_pair(EXPR_DIVIDE, expr_a, expr_b);
                         (*index)--;
@@ -188,9 +187,9 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
                     }
                     case SYMBOL_MODULO: {
                         (*index)++;
-                        expr_t next_expr = parse_rvalue(tokens, index, precedence);
-						expr_t* expr_a = malloc(sizeof(expr_t));
-						expr_t* expr_b = malloc(sizeof(expr_t));
+                        Expr next_expr = parse_rvalue(tokens, index, precedence);
+                        Expr* expr_a = malloc(sizeof(Expr));
+                        Expr* expr_b = malloc(sizeof(Expr));
 						*expr_a = last_expr, *expr_b = next_expr;
                         expr = create_expr_operator_pair(EXPR_MODULO, expr_a, expr_b);
                         (*index)--;
@@ -216,15 +215,15 @@ static expr_t parse_rvalue(vec_token_t* tokens, u32* index, int max_precedence) 
 }
 
 
-static expr_t parse_const_decl(vec_token_t* tokens, u32* index, char* str) {
-    assert(tokens->data[*index]._symbol = SYMBOL_COLON_COLON);
+static Expr parse_const_decl(TokenArray* tokens, u32* index, char* str) {
+    assert(tokens->at[*index]._symbol = SYMBOL_COLON_COLON);
     (*index)++;
-    token_t token = tokens->data[*index];
-    if (token.)
+    Token token = tokens->at[*index];
+    //if (token.)
 
 }
 
-static inline int get_precedence(token_t token) {
+static inline int get_precedence(Token token) {
     switch (token.type) {
         default:
             return 0;

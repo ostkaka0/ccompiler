@@ -4,7 +4,7 @@
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the MIT license. See LICENSE for details.
  */
-
+/*
 #ifndef VEC_H
 #define VEC_H
 
@@ -179,4 +179,4 @@ typedef vec_t(double) vec_double_t;
 void vec_push_string(vec_char_t* string_stream, const char* string);
 
 #endif
-
+*/

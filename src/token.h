@@ -1,7 +1,8 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-#include "types.h"
+#include "core/types.h"
+#include "core/array.h"
 #include "external/vec.h"
 
 typedef enum {
@@ -13,7 +14,7 @@ typedef enum {
     TOKEN_FLOAT_LITERAL,
     TOKEN_STRING_LITERAL,
     TOKEN_LABEL
-} token_type_t;
+} TokenTag;
 
 typedef enum {
     SYMBOL_INCREASE,
@@ -67,10 +68,10 @@ typedef enum {
     SYMBOL_COLON_ASSIGN,
 
     SYMBOL_SEMICOLON
-} symbol_t;
+} Symbol;
 
 // typedef union {
-//     symbol_t _symbol;
+//     Symbol _symbol;
 //     char _char;
 //     int _int;
 //     float _float;
@@ -79,59 +80,59 @@ typedef enum {
 
 typedef struct {
     union {
-		symbol_t _symbol;
+        Symbol _symbol;
 		char _char;
 		int _int;
 		float _float;
 		char* _string;
 	};
-    token_type_t type;
+    TokenTag type;
     int line_number;
-} token_t;
-typedef vec_t(token_t) vec_token_t;
+} Token;
+typedef Array(Token) TokenArray;
 
-static token_t create_token_symbol(symbol_t value) {
-    return (token_t){
+static Token create_token_symbol(Symbol value) {
+    return (Token){
         .type = TOKEN_SYMBOL,
         ._symbol = value,
         .line_number = 0,
     };
 };
 
-static token_t create_token_char_literal(char value) {
-    token_t token;
+static Token create_token_char_literal(char value) {
+    Token token;
     token._char = value;
     token.type = TOKEN_CHAR_LITERAL;
 	token.line_number = 0;
     return token;
 };
 
-static token_t create_token_int(int value) {
-    token_t token;
+static Token create_token_int(int value) {
+    Token token;
     token._int = value;
     token.type = TOKEN_INT_LITERAL;
 	token.line_number = 0;
     return token;
 };
 
-static token_t create_token_float(float value) {
-    token_t token;
+static Token create_token_float(float value) {
+    Token token;
     token._float = value;
     token.type = TOKEN_FLOAT_LITERAL;
 	token.line_number = 0;
     return token;
 };
 
-static token_t create_token_label(char* value) {
-    token_t token;
+static Token create_token_label(char* value) {
+    Token token;
     token._string = value;
     token.type = TOKEN_LABEL;
 	token.line_number = 0;
     return token;
 };
 
-static token_t create_token_string_literal(char* value) {
-    token_t token;
+static Token create_token_string_literal(char* value) {
+    Token token;
     token._string = value;
     token.type = TOKEN_STRING_LITERAL;
 	token.line_number = 0;

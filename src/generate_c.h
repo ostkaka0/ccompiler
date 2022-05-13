@@ -4,6 +4,6 @@
 #include "common.h"
 #include "ast.h"
 
-char* generate_c(const vec_expr_t ast);
+char* generate_c(const ExprArray ast);
 
 #endif // GENERATE_C_H
