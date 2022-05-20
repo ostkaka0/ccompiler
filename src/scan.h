@@ -65,9 +65,10 @@ static TokenArray scan(const char* path, int num_null_terminators) {
                     runtime_error(line_number, "Name is longer than max length.");
             }
             while (isalnum(c) || c == '_');
-            char* text = malloc(length+1);
-            text[length] = '\0';
-            memcpy(text, &buffer[index], length * sizeof(char));
+            //char* text = malloc(length+1);
+            //text[length] = '\0';
+            //memcpy(text, &buffer[index], length * sizeof(char));
+            Str text = str_dup(str_slice_cstr(buffer, index, length), temp_allocator);
             token = create_token_label(text);
         }
         // _int, Float
@@ -197,9 +198,9 @@ static TokenArray scan(const char* path, int num_null_terminators) {
 	fclose(file);
 
     for (int i = 0; i < num_null_terminators; i++) {
-        array_push(tokens, (Token){.type = TOKEN_NULL});
+        array_push(tokens, (Token){.tag = TOKEN_NULL});
     }
-    array_push(tokens, (Token){.type = TOKEN_INVALID});
+    array_push(tokens, (Token){.tag = TOKEN_INVALID});
     tokens.len -= num_null_terminators + 1;
     return tokens;
 }

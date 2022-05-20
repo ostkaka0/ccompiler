@@ -4,6 +4,7 @@
 #include "core/types.h"
 #include "core/array.h"
 #include "external/vec.h"
+#include "core/str.h"
 
 typedef enum {
     TOKEN_NULL,
@@ -84,16 +85,16 @@ typedef struct {
 		char _char;
 		int _int;
 		float _float;
-		char* _string;
+        Str _string;
 	};
-    TokenTag type;
+    TokenTag tag;
     int line_number;
 } Token;
 typedef Array(Token) TokenArray;
 
 static Token create_token_symbol(Symbol value) {
     return (Token){
-        .type = TOKEN_SYMBOL,
+        .tag = TOKEN_SYMBOL,
         ._symbol = value,
         .line_number = 0,
     };
@@ -102,7 +103,7 @@ static Token create_token_symbol(Symbol value) {
 static Token create_token_char_literal(char value) {
     Token token;
     token._char = value;
-    token.type = TOKEN_CHAR_LITERAL;
+    token.tag = TOKEN_CHAR_LITERAL;
 	token.line_number = 0;
     return token;
 };
@@ -110,7 +111,7 @@ static Token create_token_char_literal(char value) {
 static Token create_token_int(int value) {
     Token token;
     token._int = value;
-    token.type = TOKEN_INT_LITERAL;
+    token.tag = TOKEN_INT_LITERAL;
 	token.line_number = 0;
     return token;
 };
@@ -118,23 +119,23 @@ static Token create_token_int(int value) {
 static Token create_token_float(float value) {
     Token token;
     token._float = value;
-    token.type = TOKEN_FLOAT_LITERAL;
+    token.tag = TOKEN_FLOAT_LITERAL;
 	token.line_number = 0;
     return token;
 };
 
-static Token create_token_label(char* value) {
+static Token create_token_label(Str value) {
     Token token;
     token._string = value;
-    token.type = TOKEN_LABEL;
+    token.tag = TOKEN_LABEL;
 	token.line_number = 0;
     return token;
 };
 
-static Token create_token_string_literal(char* value) {
+static Token create_token_string_literal(Str value) {
     Token token;
     token._string = value;
-    token.type = TOKEN_STRING_LITERAL;
+    token.tag = TOKEN_STRING_LITERAL;
 	token.line_number = 0;
     return token;
 };

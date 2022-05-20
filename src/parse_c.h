@@ -19,7 +19,7 @@ static ExprArray parse_c(TokenArray* tokens) {
     while (index < tokens->len) {
         Expr expr = parse_c_stmt(tokens, &index);
         //evaluateType(&Expr);
-        if (expr.type != EXPR_NULL)
+        if (expr.tag != EXPR_NULL)
             array_push(expressions, expr);
     }
     
@@ -28,22 +28,22 @@ static ExprArray parse_c(TokenArray* tokens) {
 
 static Expr parse_c_stmt(TokenArray* tokens, u32* index) {
     Expr last_expr;
-    last_expr.type = EXPR_NULL;
+    last_expr.tag = EXPR_NULL;
     
     for(; *index < tokens->len; ++(*index)) {
         Token token = tokens->at[*index];
         Expr expr;
         
-        switch (token.type) {
+        switch (token.tag) {
             case TOKEN_LABEL:
-                if (last_expr.type == EXPR_DECL_DATATYPE)
+                if (last_expr.tag == EXPR_DECL_DATATYPE)
                     expr = create_expr_decl_variable(last_expr.datatype, token._string);
-                else if (last_expr.type != EXPR_NULL)
+                else if (last_expr.tag != EXPR_NULL)
                     runtime_error(token.line_number, "Unexpected token");
                 else {
-                    datatype_t datatype = create_datatype_label(token._string);
-                    if (datatype.type == TYPE_UNEVALUATED)
-                        PARSE_ERROR("Symbol '%s' is not a datatype", token.line_number, token._string);
+                    Datatype datatype = create_datatype_label(token._string);
+                    if (datatype.tag == TYPE_UNEVALUATED)
+                        PARSE_ERROR("Symbol '%.*s' is not a datatype", token.line_number, token._string.len, token._string.at);
                     expr = create_expr_decl_datatype(datatype);
                 }
                 break;
@@ -54,12 +54,12 @@ static Expr parse_c_stmt(TokenArray* tokens, u32* index) {
 						(*index)++;
                         return last_expr;
                     case SYMBOL_ASSIGN:
-                        if (last_expr.type == EXPR_DECL_VARIABLE) {
+                        if (last_expr.tag == EXPR_DECL_VARIABLE) {
                             (*index)++;
                             Expr expr_value = parse_c_rvalue(tokens, index, 15);
                             (*index)--;
-                            datatype_t datatype = evaluate_type(&expr_value);
-                            if (!datatype_implicit_cast_cmp(datatype, last_expr.datatype))
+                            Datatype datatype = evaluate_type(&expr_value);
+                            if (!datatype_implicit_cast_equals(datatype, last_expr.datatype))
                                 runtime_error(expr_value.line_number, "datatype of expression does not match with variable");
 
                             expr = create_expr_decl_variable_assign(last_expr, expr_value);
@@ -68,13 +68,13 @@ static Expr parse_c_stmt(TokenArray* tokens, u32* index) {
                             runtime_error(token.line_number, "Unexpected token");
                         break;
                     default:
-                        if (last_expr.type != EXPR_NULL)
+                        if (last_expr.tag != EXPR_NULL)
                             runtime_error_simple("Unexpected token");
                         return parse_c_rvalue(tokens, index, 15);
                 }
                 break;
             default:
-                if (last_expr.type != EXPR_NULL)
+                if (last_expr.tag != EXPR_NULL)
                     runtime_error_simple("Unexpected token");
                 return parse_c_rvalue(tokens, index, 15);
         }
@@ -89,7 +89,7 @@ static Expr parse_c_stmt(TokenArray* tokens, u32* index) {
 
 static Expr parse_c_rvalue(TokenArray* tokens, u32* index, int max_precedence) {
     Expr last_expr;
-    last_expr.type = EXPR_NULL;
+    last_expr.tag = EXPR_NULL;
     
     for(; *index < tokens->len; ++*index) {
         Token token = tokens->at[*index];
@@ -99,29 +99,29 @@ static Expr parse_c_rvalue(TokenArray* tokens, u32* index, int max_precedence) {
         if (precedence > max_precedence)
             return last_expr;
         
-        switch(token.type) {
+        switch(token.tag) {
             case TOKEN_INT_LITERAL:
                 expr = create_expr_int_literal(token._int);
-                if (last_expr.type) runtime_error(token.line_number, "Unexpected token (int).");
+                if (last_expr.tag) runtime_error(token.line_number, "Unexpected token (int).");
                 break;
             case TOKEN_FLOAT_LITERAL:
                 expr = create_expr_float_literal(token._float);
-                if (last_expr.type) runtime_error(token.line_number, "Unexpected token (float).");
+                if (last_expr.tag) runtime_error(token.line_number, "Unexpected token (float).");
                 break;
                 
             case TOKEN_SYMBOL: 
                 switch(token._symbol) {
                     case SYMBOL_SEMICOLON:
-                        if (!last_expr.type) runtime_error(token.line_number, "Unexpected token ';'");
+                        if (!last_expr.tag) runtime_error(token.line_number, "Unexpected token ';'");
                         return last_expr;
                     case SYMBOL_PARANTHESIS_END:
-                        if (!last_expr.type) runtime_error(token.line_number, "Unexpected token ')'");
+                        if (!last_expr.tag) runtime_error(token.line_number, "Unexpected token ')'");
                         return last_expr;
                         
                     case SYMBOL_PARANTHESIS_BEGIN: {
                         (*index)++;
                         expr = parse_c_rvalue(tokens, index, precedence);
-                        if (last_expr.type) runtime_error(token.line_number, "Unexpected token '('");
+                        if (last_expr.tag) runtime_error(token.line_number, "Unexpected token '('");
                         break;
                     }
                     case SYMBOL_ADD: {
@@ -194,7 +194,7 @@ static Expr parse_c_rvalue(TokenArray* tokens, u32* index, int max_precedence) {
 }
 
 static inline int get_c_precedence(Token token) {
-    switch (token.type) {
+    switch (token.tag) {
         default:
             return 0;
             

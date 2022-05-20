@@ -3,7 +3,8 @@
 
 #include "common.h"
 #include "ast.h"
+#include "core/str.h"
 
-char* generate_c(const ExprArray ast);
+Str generate_c(const ExprArray ast);
 
 #endif // GENERATE_C_H

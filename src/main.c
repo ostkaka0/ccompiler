@@ -22,14 +22,15 @@
         ++(iter))
 
 int main(int argc, char **argv) {
+    temp_storage_init(4 * MB);
     PARSE_ERROR("The cow is hungry #%i", -1, 1337);
 
     TokenArray tokens = scan("test.ccc", 4);
     
     Token token;
-	int i;
+    int i;
     vec_foreach(&tokens, token, i) {
-        switch(token.type) {
+        switch(token.tag) {
         case TOKEN_SYMBOL:
            printf("symbol  ");
            break;
@@ -43,7 +44,7 @@ int main(int argc, char **argv) {
 			printf("float %f  ", token._float);
 			break;
 		case TOKEN_LABEL:
-			printf("label %s  ", token._string);
+            printf("label %s.*  ", token._string.at, token._string.len);
 			break;
 		case TOKEN_STRING_LITERAL:
 			printf("string '%s'  ", token._string);
@@ -53,10 +54,10 @@ int main(int argc, char **argv) {
     printf("\n");
     
     ExprArray expressions = parse_c(&tokens);
-    char* c_code = generate_c(expressions);
-    printf("%x\n", (u64)c_code);
-    printf("%s\n", c_code);
-    printf("c-code: \n%s", c_code);
+    Str c_code = generate_c(expressions);
+    printf("%x\n", (u64)c_code.at);
+    printf("%s\n", c_code.cstr);
+    printf("c-code: \n%s", c_code.cstr);
     
     printf("\n %i \n", tokens.len);
     

@@ -83,6 +83,7 @@ INLINE bool str_equals(Str a, Str b) {
     if (a.len != b.len)           return false;
     if (a.at == b.at)             return true;
     if (a.len == 0 && b.len == 0) return true;
+    printf("%i\n", memcmp(a.at, b.at, a.len));
     return (memcmp(a.at, b.at, a.len) == 0);
 }
 
@@ -128,6 +129,14 @@ Str str_concat(Str a, Str b, Allocator allocator) {
     Str r = str_alloc(a.len + b.len, allocator);
     if (a.len) memcpy(r.at         , a.at, a.len);
     if (b.len) memcpy(r.at + a.len, b.at, b.len);
+    return r;
+}
+
+Str str_concat_char(Str a, const char c, Allocator allocator) {
+    assert(strlen(a.at) >= a.len);
+    Str r = str_alloc(a.len + 1, allocator);
+    if (a.len) memcpy(r.at         , a.at, a.len);
+    r.at[a.len] = c;
     return r;
 }
 
