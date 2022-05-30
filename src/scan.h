@@ -4,9 +4,32 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "core/types.h"
 #include "macro.h"
 #include "token.h"
 #include "external/vec.h"
+
+/* Too complicated for now
+typedef struct OperatorTable {
+    u32 base_idcs[256];
+    CstrArray operators;
+} OperatorTable;
+
+void operator_table_init(OperatorTable* table, CstrArray operators) {
+    qsort(operators.at, operators.len, sizeof(char*), (int(*)(const void*, const void*))strcmp);
+    table->operators = operators;
+
+    char ascii_char = 0;
+    for (int i = 0; i < operators.len; i++) {
+        char c = operators.at[i][0];
+        if (c > ascii_char) {
+            memset(&table->base_idcs[ascii_char], i, (c - ascii_char) * sizeof(u32));
+        }
+    }
+    memset(&table->base_idcs[ascii_char], operators.len, (255 - ascii_char) * sizeof(u32));
+}*/
+
+
 
 static TokenArray scan(const char* path, int num_null_terminators) {
     TokenArray tokens = {};

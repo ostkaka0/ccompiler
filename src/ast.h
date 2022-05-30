@@ -159,4 +159,5 @@ static Datatype evaluate_type(Expr* expr) {
     return expr->datatype;
 }
 
+
 #endif // AST_H

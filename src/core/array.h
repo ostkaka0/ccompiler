@@ -59,6 +59,9 @@ typedef Array(void) voidArray; // Generic array
 #define array_clear(a) (a.len = 0)
 #define array_first(a) ((a).at[0])
 #define array_last(a) ((a).at[(a).len - 1])
+#define array_push_array(a, array, len) (array_expand(a, len), memcpy((a).at + (a).len, array, len * sizeof(*(a).at)), (a).len += len)
+#define array_extend(a, a2) array_push_array(a, (a2).at, (a2).len)
+#define array_sort(a, cmp) qsort((a).at, (a).len, sizeof(*(v).at), cmp)
 
 #define array_init(a, allocator_val) (memset(&(a), 0, sizeof(a)), (a).allocator = allocator_val)
 #define array_create(allocator) {NULL, 0, 0, (allocator)}
@@ -88,7 +91,6 @@ typedef Array(void) voidArray; // Generic array
     }
 }
 void _array_reserve(void** a, i64* len, i64* cap, Allocator* allocator, i64 item_size, i64 alignment, i64 new_len) {
-    _array_reserve2(a, len, cap, allocator, item_size, alignment, new_len);
     _array_reserve2(a, len, cap, allocator, item_size, alignment, new_len);
 }
 

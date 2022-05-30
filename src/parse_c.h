@@ -12,18 +12,25 @@ static Expr parse_c_rvalue(TokenArray* tokens, u32* index, int max_precedence);
 static inline int get_c_precedence(Token token);
 
 
-static ExprArray parse_c(TokenArray* tokens) {
+static ExprArray parse_c(TokenArray* tokens, u32* index) {
     ExprArray expressions = {};
-    u32 index = 0;
     
     while (index < tokens->len) {
-        Expr expr = parse_c_stmt(tokens, &index);
+        if (token_is_symbol(tokens->at[*index], SYMBOL_BRACE_END)) {
+            break;
+        }
+
+        Expr expr = parse_c_stmt(tokens, index);
         //evaluateType(&Expr);
         if (expr.tag != EXPR_NULL)
             array_push(expressions, expr);
     }
-    
+
     return expressions;
+}
+
+static Expr parse_c_struct(TokenArray* tokens, u32* index) {
+
 }
 
 static Expr parse_c_stmt(TokenArray* tokens, u32* index) {
@@ -41,10 +48,15 @@ static Expr parse_c_stmt(TokenArray* tokens, u32* index) {
                 else if (last_expr.tag != EXPR_NULL)
                     runtime_error(token.line_number, "Unexpected token");
                 else {
-                    Datatype datatype = create_datatype_label(token._string);
-                    if (datatype.tag == TYPE_UNEVALUATED)
-                        PARSE_ERROR("Symbol '%.*s' is not a datatype", token.line_number, token._string.len, token._string.at);
-                    expr = create_expr_decl_datatype(datatype);
+                    if (str_is(token._string, "stuct")) {
+                        (*index)++;
+                        expr = parse_c_struct(tokens, index);
+                    } else {
+                        Datatype datatype = create_datatype_label(token._string);
+                        if (datatype.tag == TYPE_UNEVALUATED)
+                            PARSE_ERROR("Symbol '%.*s' is not a datatype", token.line_number, token._string.len, token._string.at);
+                        expr = create_expr_decl_datatype(datatype);
+                    }
                 }
                 break;
             

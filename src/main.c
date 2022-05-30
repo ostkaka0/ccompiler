@@ -21,6 +21,18 @@
         (iter) < (v)->len && (((var) = (v)->at[(iter)]), 1);\
         ++(iter))
 
+/*
+const char* g_operators[] = {
+    "&", "^", "|", "+", "-", "*", "/", "%",
+    "!", "~",
+    "=", "+=", "&=", "^=", "|=", "+=", "-=", "*=", "/=", "%=",
+    "==", "!=", "<", ">" "<=", ">=",
+    "||", "&&", "||=", "&&=",
+    "(", ")", "{", "}", "[", "]",
+    ".", ",", ":", ";",
+    "#", "@", "?", "\\", "<=>"
+};*/
+
 int main(int argc, char **argv) {
     temp_storage_init(4 * MB);
     PARSE_ERROR("The cow is hungry #%i", -1, 1337);
@@ -53,7 +65,8 @@ int main(int argc, char **argv) {
     }
     printf("\n");
     
-    ExprArray expressions = parse_c(&tokens);
+    u32 parse_idx = 0;
+    ExprArray expressions = parse_c(&tokens, &parse_idx);
     Str c_code = generate_c(expressions);
     printf("%x\n", (u64)c_code.at);
     printf("%s\n", c_code.cstr);

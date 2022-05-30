@@ -140,4 +140,9 @@ static Token create_token_string_literal(Str value) {
     return token;
 };
 
+static bool token_is_symbol(Token token, Symbol symbol) {
+    if (token.tag != TOKEN_SYMBOL) return false;
+    return (token._symbol == symbol);
+}
+
 #endif // TOKEN_H

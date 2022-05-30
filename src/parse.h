@@ -6,26 +6,56 @@
 #include "common.h"
 
 
-static Expr parse_stmt(TokenArray* tokens, u32* index);
+static Expr parse_expr(TokenArray* tokens, u32* index);
 static Expr parse_rvalue(TokenArray* tokens, u32* index, int max_precedence);
 static inline int get_precedence(Token token);
 
 
-static ExprArray parse(TokenArray* tokens) {
+static ExprArray parse_scope(TokenArray* tokens, u32* index, bool is_top_level) {
     ExprArray expressions = {};
-    u32 index = 0;
-    
+
     while (index < tokens->len) {
-        Expr expr = parse_stmt(tokens, &index);
+        if (token_is_symbol(tokens->at[*index], SYMBOL_BRACE_END)) {
+            if (is_top_level) PARSE_ERROR("Unexpected symbol '}'", tokens->at[*index].line_number, tokens->at[*index]._string);
+            break;
+        }
+        if (tokens->at[*index].tag == TOKEN_NULL) {
+            if (!is_top_level) PARSE_ERROR("Unexpected symbol '}'", tokens->at[*index].line_number, tokens->at[*index]._string);
+            break;
+        }
+
+        Expr expr = parse_expr(tokens, index);
         //evaluateType(&Expr);
         if (expr.tag != EXPR_NULL)
             array_push(expressions, expr);
     }
-    
+
     return expressions;
 }
 
-static Expr parse_stmt(TokenArray* tokens, u32* index) {
+/*static Expr parse_proc(TokenArray* tokens, u32* index) {
+}*/
+
+// NOOOOO
+// Everything should be done in parse_expr() instead!
+/*static Expr parse_stmt(TokenArray* tokens, u32* index) {
+    Expr last_expr;
+    last_expr.tag = EXPR_NULL;
+
+    for(; *index < tokens->len; ++(*index)) {
+        Token token = tokens->at[*index];
+
+        // Check if previous expression with current tokens should form a statement:
+        switch (token.tag) {
+
+        }
+
+        // If the current tokens can't be parsed into a stetement, then parse an expression
+        // Multiple expressions followed by each others will form a compound expression. (Maybe this logic is not needed)
+        Expr expr = parse_expr()
+}*/
+
+static Expr parse_expr(TokenArray* tokens, u32* index) {
     Expr last_expr;
     last_expr.tag = EXPR_NULL;
     
